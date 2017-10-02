@@ -4,6 +4,8 @@
 #include <common.h>
 #include <arpa/inet.h>
 
+/*TODO: ARP, RARP, str matching */
+
 using namespace std;
 
 uint8_t arg_flag = 0;
@@ -68,6 +70,9 @@ int parse_args(int argc, char *argv[])
 
 #define ETH_LEN		6
 #define ADDRESS_LEN	20
+
+/* See if fragmented printing is reauired here. This is would be better for str matching */
+#define PAYLOAD_MAX_LEN	(4096 * 8)
 struct out_t {
 	uint8_t src_mac[ETH_LEN];
 	uint8_t dst_mac[ETH_LEN];
@@ -78,6 +83,8 @@ struct out_t {
 	uint16_t dst_port;
 	char protocol[10];
 	uint64_t len;
+	uint8_t payload[PAYLOAD_MAX_LEN];
+	uint64_t payload_len;
 };
 
 out_t out;
@@ -102,6 +109,21 @@ void print_out()
 	cout << " " << out.src_ip << ":" << out.src_port << " -> " << out.dst_ip << ":" << out.dst_port << " ";
 	cout << " " << out.protocol;
 	cout << " " << out.len;
+
+	cout << endl;
+
+	int i;
+	/* TODO: Try checking for 10, 11 and 13 also */
+	for (i = 0; i < out.payload_len; i++) {
+		if ((out.payload[i] >= 32 && out.payload[i] <= 126))
+			out.payload[i] = (char)out.payload[i];
+		else
+			out.payload[i] = '.';
+	}
+	out.payload[i] = (char)'\0';
+
+	cout << " " << (char *)out.payload << endl;
+
 	cout << endl;
 }
 
@@ -110,8 +132,8 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	const struct sniff_ethernet *eth;
 	const struct sniff_ip *ip;
 	const struct sniff_tcp *tcp;
-	int ip_size, tcp_size;
 	u_char *payload;
+	int ip_size, tcp_size;
 
 	out.len = header->len;
 	eth = (struct sniff_ethernet *)packet;
@@ -121,8 +143,13 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 
 	ip = (struct sniff_ip *)(packet + SIZE_ETH_HDR);
 	ip_size = IP_HL(ip) * 4;
-	if (ip_size < 20)
+	if (ip_size < 20) {
+		return;
+		ip_size = 0;
+	}
+#if 0
 		cout << "Not a IP packet" << endl;
+#endif
 
 	strcpy(out.src_ip, inet_ntoa(ip->ip_src));
 	strcpy(out.dst_ip, inet_ntoa(ip->ip_dst));
@@ -151,8 +178,9 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 
 	tcp = (struct sniff_tcp *)(packet + SIZE_ETH_HDR + ip_size);
 	tcp_size = TH_OFF(tcp)*4;
-#if 0
 	if (tcp_size < 20)
+		tcp_size = 0;
+#if 0
 		cout << "Not a TCP packet" << endl;
 #endif
 
@@ -160,6 +188,9 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	out.dst_port = ntohs(tcp->th_dport);
 
 	payload = (u_char *)(packet + SIZE_ETH_HDR + ip_size + tcp_size);
+	out.payload_len = out.len - (SIZE_ETH_HDR + ip_size + tcp_size);
+
+	memcpy(out.payload, payload, out.payload_len);
 	print_out();
 }
 
