@@ -1,8 +1,69 @@
 #include <iostream>
 #include <pcap.h>
+#include <string.h>
 #include <common.h>
 
 using namespace std;
+
+uint8_t arg_flag = 0;
+
+#define set_flag(y) (arg_flag |= (1 << y))
+#define get_flag(y) (arg_flag & (1 << y))
+#define clr_flag(y) (arg_flag & ~(1 << y))
+
+#define	ARG_FLAG_STRING		0
+#define	ARG_FLAG_DEVICE		1
+#define	ARG_FLAG_FILE		2
+#define ARG_FLAG_EXP		3
+
+struct in_args_t {
+	char *dev;
+	char *file;
+	char *string;
+	char *exp;
+};
+
+in_args_t in_args;
+
+int parse_args(int argc, char *argv[])
+{
+	/* No argument is given */
+	if (argc == 1)
+		arg_flag = 0;
+
+	int i = 0;
+	char x = 0;
+	for (i = 1; i < argc;) {
+		if (argv[i][0] == '-' && (strlen(argv[i]) == 2))
+			x = argv[i][1];
+		else {
+				in_args.exp = strdup(argv[i]);
+				set_flag(ARG_FLAG_EXP);
+				i++;
+				continue;
+		}
+		switch (x) {
+			case 'r':
+				in_args.file = strdup(argv[i + 1]);
+				set_flag(ARG_FLAG_FILE);
+				i += 2;
+				break;
+			case 's':
+				in_args.string = strdup(argv[i + 1]);
+				set_flag(ARG_FLAG_STRING);
+				i += 2;
+				break;
+			case 'i':
+				in_args.dev = strdup(argv[i + 1]);
+				set_flag(ARG_FLAG_DEVICE);
+				i += 2;
+				break;
+			default:
+				i++;
+				break;
+		}
+	}
+}
 
 void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
@@ -50,7 +111,22 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 
 int main(int argc, char *argv[])
 {
-	cout << "Hello World" << endl;
+	/* Parse and populate all the input arguments */
+	parse_args(argc, argv);
+
+/* Check for args. Remove later */
+#if 0
+	if (get_flag(ARG_FLAG_STRING))
+		cout << "STRING " << in_args.string << endl;
+	if (get_flag(ARG_FLAG_DEVICE))
+		cout << "DEVICE " << in_args.dev << endl;
+	if (get_flag(ARG_FLAG_EXP))
+		cout << "EXP " << in_args.exp << endl;
+	if (get_flag(ARG_FLAG_FILE))
+		cout << "FILE " << in_args.file << endl;
+	return 0;
+#endif
+
 	char *dev, err_buf[PCAP_ERRBUF_SIZE];
 
 	pcap_t *handle;

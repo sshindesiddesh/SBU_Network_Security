@@ -1,7 +1,7 @@
 CC=g++
 LIBS=-l
 SDIR=src
-ODIR=OBJ
+ODIR=obj
 AT=@
 INC=-Iinclude
 
