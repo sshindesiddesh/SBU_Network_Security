@@ -3,6 +3,7 @@
 #include <string.h>
 #include <common.h>
 #include <arpa/inet.h>
+#include <string>
 
 /*TODO: ARP, RARP, str matching */
 
@@ -83,7 +84,7 @@ struct out_t {
 	uint16_t dst_port;
 	char protocol[10];
 	uint64_t len;
-	uint8_t payload[PAYLOAD_MAX_LEN];
+	string payload;
 	uint64_t payload_len;
 };
 
@@ -112,17 +113,7 @@ void print_out()
 
 	cout << endl;
 
-	int i;
-	/* TODO: Try checking for 10, 11 and 13 also */
-	for (i = 0; i < out.payload_len; i++) {
-		if ((out.payload[i] >= 32 && out.payload[i] <= 126))
-			out.payload[i] = (char)out.payload[i];
-		else
-			out.payload[i] = '.';
-	}
-	out.payload[i] = (char)'\0';
-
-	cout << " " << (char *)out.payload << endl;
+	cout << " " << out.payload << endl;
 
 	cout << endl;
 }
@@ -190,8 +181,24 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	payload = (u_char *)(packet + SIZE_ETH_HDR + ip_size + tcp_size);
 	out.payload_len = out.len - (SIZE_ETH_HDR + ip_size + tcp_size);
 
-	memcpy(out.payload, payload, out.payload_len);
+	int i;
+	/* TODO: Try checking for 10, 11 and 13 also */
+	for (i = 0; i < out.payload_len; i++) {
+		if ((payload[i] >= 32 && payload[i] <= 126))
+			out.payload += (char)payload[i];
+		else
+			out.payload += '.';
+	}
+
+	if (get_flag(ARG_FLAG_STRING)) {
+		if (out.payload.find(string(in_args.string)) != std::string::npos)
+			print_out();
+		else
+			return;
+	}
+
 	print_out();
+
 }
 
 int main(int argc, char *argv[])
