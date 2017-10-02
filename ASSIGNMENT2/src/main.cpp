@@ -75,6 +75,7 @@ int parse_args(int argc, char *argv[])
 /* See if fragmented printing is reauired here. This is would be better for str matching */
 #define PAYLOAD_MAX_LEN	(4096 * 8)
 struct out_t {
+	struct timeval ts;
 	uint8_t src_mac[ETH_LEN];
 	uint8_t dst_mac[ETH_LEN];
 	uint16_t eth_type;
@@ -90,11 +91,18 @@ struct out_t {
 
 out_t out;
 
-int count = 0;
-
 void print_out()
 {
-	cout << count++ << " ";
+	time_t nowtime;
+	struct tm *nowtm;
+	char tmbuf[64], buf[64];
+
+	nowtime = out.ts.tv_sec;
+	nowtm = localtime(&nowtime);
+	strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
+	snprintf(buf, sizeof buf, "%s.%06ld", tmbuf, out.ts.tv_usec);
+
+	cout << buf << " ";
 	for (int i = 0; i < 6; i++) {
 		printf("%.2x", out.dst_mac[i]);
 		if (i != 5)
@@ -106,10 +114,10 @@ void print_out()
 		if (i != 5)
 			cout << ":";
 	}
-	printf(" 0x%x ", out.eth_type);
+	printf(" type 0x%x", out.eth_type);
+	cout << " len " << out.len;
 	cout << " " << out.src_ip << ":" << out.src_port << " -> " << out.dst_ip << ":" << out.dst_port << " ";
 	cout << " " << out.protocol;
-	cout << " " << out.len;
 
 	cout << endl;
 
@@ -125,6 +133,7 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	const struct sniff_tcp *tcp;
 	u_char *payload;
 	int ip_size, tcp_size;
+	out.ts = header->ts;
 
 	out.len = header->len;
 	eth = (struct sniff_ethernet *)packet;
@@ -168,7 +177,7 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	}
 
 	tcp = (struct sniff_tcp *)(packet + SIZE_ETH_HDR + ip_size);
-	tcp_size = TH_OFF(tcp)*4;
+	tcp_size = TH_OFF(tcp) * 4;
 	if (tcp_size < 20)
 		tcp_size = 0;
 #if 0
