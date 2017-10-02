@@ -91,7 +91,40 @@ struct out_t {
 
 out_t out;
 
-void print_out()
+void print_payload(uint8_t *buf)
+{
+	int i = 0, j = 0;
+
+	while (1) {
+		for (i = 0; i < 16 && ((i + j) < out.payload_len); i++) {
+			printf("%.2x ", buf[j + i]);
+			if (i != 0 && i % 16 == 0)
+				printf("\n");
+		}
+
+		/* Adjust the char print for last line */
+		if ((i + j) == out.payload_len)
+			for (int k = 0; k < (16 - (out.payload_len % 16)); k++)
+				/* 3 spaces per char */
+				printf("   ");
+
+		/* 4 spaces */
+		printf("    ");
+		for (i = 0; i < 16 && ((i+ j)  < out.payload_len); i++) {
+			printf("%c ", out.payload[j + i]);
+			if (i != 0 && i % 16 == 0)
+				printf("\n");
+		}
+
+		if ((i + j) == out.payload_len)
+			break;
+		j += 16;
+		printf("\n");
+	}
+	printf("\n");
+}
+
+void print_out(u_char *payload)
 {
 	time_t nowtime;
 	struct tm *nowtm;
@@ -121,10 +154,9 @@ void print_out()
 
 	cout << endl;
 
-	cout << " " << out.payload << endl;
-
-	cout << endl;
+	print_payload(payload);
 }
+
 
 void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
@@ -201,12 +233,12 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 
 	if (get_flag(ARG_FLAG_STRING)) {
 		if (out.payload.find(string(in_args.string)) != std::string::npos)
-			print_out();
+			print_out(payload);
 		else
 			return;
 	}
 
-	print_out();
+	print_out(payload);
 
 }
 
