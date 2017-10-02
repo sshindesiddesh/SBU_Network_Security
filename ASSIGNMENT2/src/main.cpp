@@ -1,11 +1,51 @@
 #include <iostream>
 #include <pcap.h>
+#include <common.h>
 
 using namespace std;
 
 void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
 	cout << "C:Len " << header->len << endl;
+	const struct sniff_ethernet *eth;
+	const struct sniff_ip *ip;
+	const struct sniff_tcp *tcp;
+	int ip_size, tcp_size;
+	u_char *payload;
+
+	eth = (struct sniff_ethernet *)packet;
+	ip = (struct sniff_ip *)(packet + SIZE_ETH_HDR);
+	ip_size = IP_HL(ip) * 4;
+	if (ip_size < 20)
+		cout << "Not a IP packet" << endl;
+	/* Refered from netiner/in.h */
+	switch (ip->ip_p) {
+		case IPPROTO_TCP:
+			printf("TCP\n");
+			break;
+		case IPPROTO_UDP:
+			printf("UDP\n");
+			return;
+		case IPPROTO_ICMP:
+			printf("ICMP\n");
+			return;
+		case IPPROTO_IGMP:
+			printf("IGMP\n");
+			return;
+		case IPPROTO_IP:
+			printf("IP\n");
+			return;
+		default:
+			printf("OTHER\n");
+			return;
+	}
+	tcp = (struct sniff_tcp *)(packet + SIZE_ETH_HDR + ip_size);
+	tcp_size = TH_OFF(tcp)*4;
+	if (tcp_size < 20)
+		cout << "Not a TCP packet" << endl;
+	payload = (u_char *)(packet + SIZE_ETH_HDR + ip_size + tcp_size);
+
+
 }
 
 int main(int argc, char *argv[])
@@ -41,9 +81,6 @@ int main(int argc, char *argv[])
 
 	if (pcap_setfilter(handle, &fp) == -1)
 		cout << "Could not install filter " << endl;
-
-	packet = pcap_next(handle, &header);
-	cout << "Grabbed a packet with lenght : " << header.len << endl;
 
 	pcap_loop(handle, -1, callback, NULL);
 
