@@ -2,6 +2,7 @@
 #include <pcap.h>
 #include <string.h>
 #include <common.h>
+#include <arpa/inet.h>
 
 using namespace std;
 
@@ -65,48 +66,101 @@ int parse_args(int argc, char *argv[])
 	}
 }
 
+#define ETH_LEN		6
+#define ADDRESS_LEN	20
+struct out_t {
+	uint8_t src_mac[ETH_LEN];
+	uint8_t dst_mac[ETH_LEN];
+	uint16_t eth_type;
+	char src_ip[ADDRESS_LEN];
+	uint16_t src_port;
+	char dst_ip[ADDRESS_LEN];
+	uint16_t dst_port;
+	char protocol[10];
+	uint64_t len;
+};
+
+out_t out;
+
+int count = 0;
+
+void print_out()
+{
+	cout << count++ << " ";
+	for (int i = 0; i < 6; i++) {
+		printf("%.2x", out.dst_mac[i]);
+		if (i != 5)
+			cout << ":";
+	}
+	cout << " -> " ;
+	for (int i = 0; i < 6; i++) {
+		printf("%.2x", out.src_mac[i]);
+		if (i != 5)
+			cout << ":";
+	}
+	printf(" 0x%x ", out.eth_type);
+	cout << " " << out.src_ip << ":" << out.src_port << " -> " << out.dst_ip << ":" << out.dst_port << " ";
+	cout << " " << out.protocol;
+	cout << " " << out.len;
+	cout << endl;
+}
+
 void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
-	cout << "C:Len " << header->len << endl;
 	const struct sniff_ethernet *eth;
 	const struct sniff_ip *ip;
 	const struct sniff_tcp *tcp;
 	int ip_size, tcp_size;
 	u_char *payload;
 
+	out.len = header->len;
 	eth = (struct sniff_ethernet *)packet;
+	memcpy(out.src_mac, eth->ether_shost, 6);
+	memcpy(out.dst_mac, eth->ether_dhost, 6);
+	out.eth_type = ntohs(eth->ether_type);
+
 	ip = (struct sniff_ip *)(packet + SIZE_ETH_HDR);
 	ip_size = IP_HL(ip) * 4;
 	if (ip_size < 20)
 		cout << "Not a IP packet" << endl;
+
+	strcpy(out.src_ip, inet_ntoa(ip->ip_src));
+	strcpy(out.dst_ip, inet_ntoa(ip->ip_dst));
+
 	/* Refered from netiner/in.h */
 	switch (ip->ip_p) {
 		case IPPROTO_TCP:
-			printf("TCP\n");
+			strcpy(out.protocol, "TCP");
 			break;
 		case IPPROTO_UDP:
-			printf("UDP\n");
-			return;
+			strcpy(out.protocol, "UDP");
+			break;
 		case IPPROTO_ICMP:
-			printf("ICMP\n");
-			return;
+			strcpy(out.protocol, "ICMP");
+			break;
 		case IPPROTO_IGMP:
-			printf("IGMP\n");
+			strcpy(out.protocol, "IGMP");
 			return;
 		case IPPROTO_IP:
-			printf("IP\n");
+			strcpy(out.protocol, "IP");
 			return;
 		default:
-			printf("OTHER\n");
+			strcpy(out.protocol, "OTHER");
 			return;
 	}
+
 	tcp = (struct sniff_tcp *)(packet + SIZE_ETH_HDR + ip_size);
 	tcp_size = TH_OFF(tcp)*4;
+#if 0
 	if (tcp_size < 20)
 		cout << "Not a TCP packet" << endl;
+#endif
+
+	out.src_port = ntohs(tcp->th_sport);
+	out.dst_port = ntohs(tcp->th_dport);
+
 	payload = (u_char *)(packet + SIZE_ETH_HDR + ip_size + tcp_size);
-
-
+	print_out();
 }
 
 int main(int argc, char *argv[])
