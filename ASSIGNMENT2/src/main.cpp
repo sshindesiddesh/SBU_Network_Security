@@ -131,16 +131,24 @@ int main(int argc, char *argv[])
 
 	pcap_t *handle;
 	struct bpf_program fp;
-	char filter_exp[] = "";
+	char *filter_exp = in_args.exp;
 	bpf_u_int32 mask;
 	bpf_u_int32 net;
 	struct pcap_pkthdr header;
 	const u_char *packet;
 
-	dev = pcap_lookupdev(err_buf);
-	if (dev == NULL)
-		cout << "No Device Found" << endl;
-	cout << "Device " << dev << endl;
+	if (get_flag(ARG_FLAG_DEVICE)) {
+		dev = in_args.dev;
+	} else if (get_flag(ARG_FLAG_FILE)) {
+		handle = pcap_open_offline(in_args.file, err_buf);
+		goto PROCESS;
+	} else {
+		dev = pcap_lookupdev(err_buf);
+		if (dev == NULL)
+			cout << "No Device Found" << endl;
+		cout << "Device " << dev << endl;
+	}
+
 
 	if (pcap_lookupnet(dev, &net, &mask, err_buf) == -1) {
 		cout << "Caould not get netmask : Error " << err_buf << endl;
@@ -152,6 +160,7 @@ int main(int argc, char *argv[])
 	if (handle == NULL)
 		cout << "Could not open device "  << dev << " : Error : " << err_buf << endl;
 
+PROCESS:
 	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1)
 		cout << "Could not parse filter" << endl;
 
