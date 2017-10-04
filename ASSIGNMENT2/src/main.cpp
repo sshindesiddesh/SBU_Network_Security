@@ -20,6 +20,10 @@ uint8_t arg_flag = 0;
 #define	ARG_FLAG_FILE		2
 #define ARG_FLAG_EXP		3
 
+#define ETHERTYPE_IP		0x800
+#define ETHERTYPE_ARP		0x806
+#define ETHERTYPE_RARP		0x8035
+
 struct in_args_t {
 	char *dev;
 	char *file;
@@ -70,11 +74,13 @@ int parse_args(int argc, char *argv[])
 }
 
 #define ETH_LEN		6
+#define IP_LEN		4
 #define ADDRESS_LEN	20
 
 /* See if fragmented printing is reauired here. This is would be better for str matching */
 #define PAYLOAD_MAX_LEN	(4096 * 8)
 struct out_t {
+	/*  IP */
 	struct timeval ts;
 	uint8_t src_mac[ETH_LEN];
 	uint8_t dst_mac[ETH_LEN];
@@ -87,6 +93,12 @@ struct out_t {
 	uint64_t len;
 	string payload;
 	uint64_t payload_len;
+	/* ARP */
+	uint8_t sender_mac[ETH_LEN];
+	uint8_t target_mac[ETH_LEN];
+	uint8_t sender_ip[IP_LEN];
+	uint8_t target_ip[IP_LEN];
+	int arp_len;
 };
 
 out_t out;
@@ -137,13 +149,13 @@ void print_out(u_char *payload)
 
 	cout << buf << " ";
 	for (int i = 0; i < 6; i++) {
-		printf("%.2x", out.dst_mac[i]);
+		printf("%.2x", out.src_mac[i]);
 		if (i != 5)
 			cout << ":";
 	}
 	cout << " -> " ;
 	for (int i = 0; i < 6; i++) {
-		printf("%.2x", out.src_mac[i]);
+		printf("%.2x", out.dst_mac[i]);
 		if (i != 5)
 			cout << ":";
 	}
@@ -157,6 +169,48 @@ void print_out(u_char *payload)
 	print_payload(payload);
 }
 
+void print_arp()
+{
+	time_t nowtime;
+	struct tm *nowtm;
+	char tmbuf[64], buf[64];
+
+	nowtime = out.ts.tv_sec;
+	nowtm = localtime(&nowtime);
+	strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
+	snprintf(buf, sizeof buf, "%s.%06ld", tmbuf, out.ts.tv_usec);
+
+	cout << buf << " ";
+	for (int i = 0; i < 6; i++) {
+		printf("%.2x", out.sender_mac[i]);
+		if (i != 5)
+			cout << ":";
+	}
+	cout << " -> " ;
+	for (int i = 0; i < 6; i++) {
+		printf("%.2x", out.target_mac[i]);
+		if (i != 5)
+			cout << ":";
+	}
+	printf(" type 0x%x", out.eth_type);
+	cout << " len " << out.arp_len << " ";
+
+	for (int i = 0; i < 4; i++) {
+		printf("%d", out.sender_ip[i]);
+		if (i != 3)
+			cout << ".";
+	}
+	cout << " -> " ;
+	for (int i = 0; i < 4; i++) {
+		printf("%d", out.target_ip[i]);
+		if (i != 3)
+			cout << ".";
+	}
+
+	cout << " " << out.protocol;
+
+	cout << endl;
+}
 
 void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
@@ -172,6 +226,28 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	memcpy(out.src_mac, eth->ether_shost, 6);
 	memcpy(out.dst_mac, eth->ether_dhost, 6);
 	out.eth_type = ntohs(eth->ether_type);
+
+	switch (out.eth_type) {
+		case ETHERTYPE_IP:
+			break;
+		case ETHERTYPE_ARP:
+		{
+			arp_hdr_t *arp_hdr = (arp_hdr_t *)(packet + SIZE_ETH_HDR);
+			memcpy(out.sender_mac, arp_hdr->sender_mac, 6);
+			memcpy(out.target_mac, arp_hdr->target_mac, 6);
+			memcpy(out.sender_ip, arp_hdr->sender_ip, 4);
+			memcpy(out.target_ip, arp_hdr->target_ip, 4);
+			out.arp_len = out.len - SIZE_ETH_HDR;
+			strcpy(out.protocol, "ARP");
+			print_arp();
+			return;
+			break;
+		}
+		default:
+			cout << "RAW PACKET" << endl;
+			print_payload((uint8_t *)(packet + SIZE_ETH_HDR));
+			return;
+	}
 
 	ip = (struct sniff_ip *)(packet + SIZE_ETH_HDR);
 	ip_size = IP_HL(ip) * 4;
