@@ -1,6 +1,29 @@
 This is passive network monitoring application. It captures traffic from a network interface in promiscous network or reads from a trace file.
 
 Software Design:
+	Psuedo Code:
+	main :
+		Parse and store input arguments
+		select a network interface
+			Check if user entered device or file
+			if not lookup for a device
+		Open live interface
+		Check if user enetered expression
+			compile them as filter expressions
+			set filters
+		Set a callback for pcap_loop
+
+	callback:
+		Store source & destination  MAC address, packet length
+		Check if ether packet type is IP or ARP
+			If ARP, print the packet contents in appropriate format and return
+			If IP, check for type of IP packet
+				Extract payload as per the protocol (TCP, UDP, ICMP) or anything other
+			Else handle the complete packet as a payload
+			Check if user entered any string for matching
+				Print payload in raw and human readable format if the payload contains the string
+			If user did not enter any string, print the payload and return
+		Print the raw packet format.
 	
 
 Application User Interface:
