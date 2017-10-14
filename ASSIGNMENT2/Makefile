@@ -13,7 +13,7 @@ $(ODIR)/%.o: $(SDIR)/%.cpp
 	$(AT)$(CC) $(INC) -c $< -o $@ $(LIBS)pcap
 
 all: $(OBJS)
-	$(AT)$(CC) $(INC) -o my_dump $^ $(LIBS)pcap
+	$(AT)$(CC) $(INC) -o mydump $^ $(LIBS)pcap
 	@echo "Created mydump"
 
 clean:
