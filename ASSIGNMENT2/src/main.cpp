@@ -5,12 +5,11 @@
 #include <arpa/inet.h>
 #include <string>
 
-/*TODO:fff mac problem */
-
 using namespace std;
 
 uint8_t arg_flag = 0;
 
+/* Generic Macros to set and clear bits in a variable */
 #define set_flag(y) (arg_flag |= (1 << y))
 #define get_flag(y) (arg_flag & (1 << y))
 #define clr_flag(y) (arg_flag & ~(1 << y))
@@ -22,8 +21,12 @@ uint8_t arg_flag = 0;
 
 #define ETHERTYPE_IP		0x800
 #define ETHERTYPE_ARP		0x806
-#define ETHERTYPE_RARP		0x8035
 
+#define ETH_LEN		6
+#define IP_LEN		4
+#define ADDRESS_LEN	20
+
+/* Structure to store input arguments */
 struct in_args_t {
 	char *dev;
 	char *file;
@@ -31,8 +34,35 @@ struct in_args_t {
 	char *exp;
 };
 
+/* Structure to store printable fields  */
+struct out_t {
+	/*  IP */
+	struct timeval ts;
+	uint8_t src_mac[ETH_LEN];
+	uint8_t dst_mac[ETH_LEN];
+	uint16_t eth_type;
+	char src_ip[ADDRESS_LEN];
+	uint16_t src_port;
+	char dst_ip[ADDRESS_LEN];
+	uint16_t dst_port;
+	char protocol[10];
+	uint64_t len;
+	string payload;
+	uint64_t payload_len;
+	/* ARP */
+	uint8_t sender_mac[ETH_LEN];
+	uint8_t target_mac[ETH_LEN];
+	uint8_t sender_ip[IP_LEN];
+	uint8_t target_ip[IP_LEN];
+	int arp_len;
+};
+
+
 in_args_t in_args;
 
+out_t out;
+
+/* Function to patse input arguments */
 int parse_args(int argc, char *argv[])
 {
 	/* No argument is given */
@@ -77,37 +107,6 @@ int parse_args(int argc, char *argv[])
 	}
 }
 
-#define ETH_LEN		6
-#define IP_LEN		4
-#define ADDRESS_LEN	20
-
-/* See if fragmented printing is reauired here. This is would be better for str matching */
-#define PAYLOAD_MAX_LEN	(4096 * 8)
-struct out_t {
-	/*  IP */
-	struct timeval ts;
-	uint8_t src_mac[ETH_LEN];
-	uint8_t dst_mac[ETH_LEN];
-	uint16_t eth_type;
-	char src_ip[ADDRESS_LEN];
-	uint16_t src_port;
-	char dst_ip[ADDRESS_LEN];
-	uint16_t dst_port;
-	char protocol[10];
-	uint64_t len;
-	string payload;
-	uint64_t payload_len;
-	/* ARP */
-	uint8_t sender_mac[ETH_LEN];
-	uint8_t target_mac[ETH_LEN];
-	uint8_t sender_ip[IP_LEN];
-	uint8_t target_ip[IP_LEN];
-	int arp_len;
-};
-
-/* Output structure to print the fields  */
-out_t out;
-
 /* Print the payload in hex and human readable format */
 void print_payload(uint8_t *buf)
 {
@@ -145,6 +144,7 @@ void print_payload(uint8_t *buf)
 	printf("\n");
 }
 
+/* Print the output in specified format for TCP, UDP, ICMP and OTHER packets */
 void print_out(u_char *payload)
 {
 	time_t nowtime;
@@ -183,6 +183,7 @@ void print_out(u_char *payload)
 	cout << endl;
 }
 
+/* Print the packet in specified format for ARP */
 void print_arp()
 {
 	time_t nowtime;
@@ -223,10 +224,12 @@ void print_arp()
 
 	cout << " " << out.protocol;
 
+	/* Live extra line for well formated output. */
 	cout << endl;
 	cout << endl;
 }
 
+/* PCAP callback for each packet */
 void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
 	const struct sniff_ethernet *eth;
@@ -238,12 +241,14 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	int ip_size, tcp_size;
 	out.ts = header->ts;
 
+	/* Store packet length, source MAC, destination MAC and ether type */
 	out.len = header->len;
 	eth = (struct sniff_ethernet *)packet;
 	memcpy(out.src_mac, eth->ether_shost, 6);
 	memcpy(out.dst_mac, eth->ether_dhost, 6);
 	out.eth_type = ntohs(eth->ether_type);
 
+	/* Check for IP or ARP packet based on ether type */
 	switch (out.eth_type) {
 		case ETHERTYPE_IP:
 			break;
@@ -261,6 +266,7 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			break;
 		}
 		default:
+			/* Print conplete payload if packet type nor recognised */
 			payload = (u_char *)(packet);
 			out.payload_len = out.len;
 			strcpy(out.protocol, "OTHER");
@@ -275,10 +281,11 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 		return;
 	}
 
+	/* Copy source and destination IP addressess */
 	strcpy(out.src_ip, inet_ntoa(ip->ip_src));
 	strcpy(out.dst_ip, inet_ntoa(ip->ip_dst));
 
-	/* Refered from netiner/in.h */
+	/* Check IP protocol type and extract required fields accordingly  */
 	switch (ip->ip_p) {
 		case IPPROTO_TCP:
 			strcpy(out.protocol, "TCP");
@@ -314,10 +321,10 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			break;
 	}
 
+	/* Print the output in specified format */
 PRINT_OUT:
 	out.payload = "";
 	int i;
-	/* TODO: Try checking for 10, 11 and 13 also */
 	for (i = 0; i < out.payload_len; i++) {
 		if (isprint(payload[i]))
 			out.payload += (char)payload[i];
@@ -325,6 +332,7 @@ PRINT_OUT:
 			out.payload += '.';
 	}
 
+	/* Compare if user input string is present */
 	if (get_flag(ARG_FLAG_STRING)) {
 		if (out.payload.find(string(in_args.string)) != std::string::npos) {
 			print_out(payload);
