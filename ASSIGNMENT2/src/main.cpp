@@ -164,10 +164,11 @@ void print_out(u_char *payload)
 	}
 	printf(" type 0x%x", out.eth_type);
 	cout << " len " << out.len;
-	if (strcmp(out.protocol, "ICMP"))
-		cout << " " << out.src_ip << ":" << out.src_port << " -> " << out.dst_ip << ":" << out.dst_port << " ";
-	else
+	if (!strcmp(out.protocol, "OTHER") || !strcmp(out.protocol, "ICMP"))
 		cout << " " << out.src_ip << " -> " << out.dst_ip << " ";
+	else
+		cout << " " << out.src_ip << ":" << out.src_port << " -> " << out.dst_ip << ":" << out.dst_port << " ";
+
 	cout << " " << out.protocol;
 
 	cout << endl;
@@ -249,13 +250,14 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			out.payload = "";
 			out.payload_len = out.arp_len;
 			int i;
-			/* TODO: Try checking for 10, 11 and 13 also */
+
 			for (i = 0; i < out.arp_len; i++) {
 				if (isprint(payload[i]))
 					out.payload += (char)payload[i];
 				else
 					out.payload += '.';
 			}
+
 			if (get_flag(ARG_FLAG_STRING)) {
 				if (out.payload.find(string(in_args.string)) != std::string::npos) {
 					print_arp();
@@ -264,6 +266,7 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 					return;
 				}
 			}
+
 			print_arp();
 			return;
 			break;
@@ -315,9 +318,10 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			strcpy(out.protocol, "ICMP");
 			break;
 		default:
-			cout << "OTHER" << endl;
+			payload = (u_char *)(packet);
+			out.payload_len = out.len;
 			strcpy(out.protocol, "OTHER");
-			return;
+			break;
 	}
 
 	out.payload = "";
@@ -352,20 +356,6 @@ int main(int argc, char *argv[])
 {
 	/* Parse and populate all the input arguments */
 	parse_args(argc, argv);
-
-/* TODO: Delete */
-/* Check for args. Remove later */
-#if 0
-	if (get_flag(ARG_FLAG_STRING))
-		cout << "STRING " << in_args.string << endl;
-	if (get_flag(ARG_FLAG_DEVICE))
-		cout << "DEVICE " << in_args.dev << endl;
-	if (get_flag(ARG_FLAG_EXP))
-		cout << "EXP " << in_args.exp << endl;
-	if (get_flag(ARG_FLAG_FILE))
-		cout << "FILE " << in_args.file << endl;
-	return 0;
-#endif
 
 	char *dev, err_buf[PCAP_ERRBUF_SIZE];
 
