@@ -19,6 +19,6 @@ all: $(OBJS)
 clean:
 	$(AT)rm -f $(ODIR)/*.o
 	$(AT)rm -rf $(ODIR)
-	$(AT)rm -rf my_dump
+	$(AT)rm -rf mydump
 run:
 	sudo ./my_dump

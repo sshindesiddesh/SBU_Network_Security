@@ -1,8 +1,15 @@
-This is passive network monitoring application. It captures traffic from a network interface in promiscous network or reads from a trace file.
+This is passive network monitoring application. It captures traffic from a network interface in promiscous mode or reads from a trace file.
 
-Software Design:
+Document has the application information in following order.
+1. Software Design Flow
+2. Application User Interface
+3. Get Started
+4. Sample Commands
+
+
+1. Software Design Flow:
 	Psuedo Code:
-	main :
+	main:
 		Parse and store input arguments
 		select a network interface
 			Check if user entered device or file
@@ -14,19 +21,20 @@ Software Design:
 		Set a callback for pcap_loop
 
 	callback:
-		Store source & destination  MAC address, packet length
+		Copy source & destination  MAC address, packet length
 		Check if ether packet type is IP or ARP
 			If ARP, print the packet contents in appropriate format and return
 			If IP, check for type of IP packet
 				Extract payload as per the protocol (TCP, UDP, ICMP) or anything other
 			Else handle the complete packet as a payload
 			Check if user entered any string for matching
-				Print payload in raw and human readable format if the payload contains the string
-			If user did not enter any string, print the payload and return
-		Print the raw packet format.
+				If payload contains string
+					Print payload in raw and human readable format and return
+				If string was not found in the payload, return.
+			Else if user did not enter any string,  print the payload and return
 	
 
-Application User Interface:
+2. Application User Interface:
 	mydump [-i interface] [-r file] [-s string] expression
 
 	-i  Live capture from the network device <interface> (e.g., eth0). If not
@@ -38,11 +46,11 @@ Application User Interface:
 	-s  Keeps only packets that contain <string> in their payload.
 
 
-Get Started:
+3. Get Started:
 	$ make
-
 		A output file with name mydump will be created.
 
+4. Sample Commands:
 	To run:
 
 	$./mydump -r hw1.pcap tcp
