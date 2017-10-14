@@ -117,14 +117,15 @@ void print_payload(uint8_t *buf)
 		}
 
 		/* Adjust the char print for last line */
-		if ((i + j) == out.payload_len)
+		if ((i + j) == out.payload_len && (out.payload_len % 16))
 			for (int k = 0; k < (16 - (out.payload_len % 16)); k++)
 				/* 3 spaces per char */
 				printf("   ");
 
+
 		/* 4 spaces */
 		printf("    ");
-		for (i = 0; i < 16 && ((i+ j)  < out.payload_len); i++) {
+		for (i = 0; i < 16 && ((i + j)  < out.payload_len); i++) {
 			printf("%c", out.payload[j + i]);
 			if (i != 0 && i % 16 == 0)
 				printf("\n");
