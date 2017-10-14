@@ -15,9 +15,6 @@ $(ODIR)/%.o: $(SDIR)/%.cpp
 all: $(OBJS)
 	$(AT)$(CC) $(INC) -o my_dump $^ $(LIBS)pcap
 	@echo "Created mydump"
-	@echo "Running mydump"
-
-.PHONY: clean
 
 clean:
 	$(AT)rm -f $(ODIR)/*.o
