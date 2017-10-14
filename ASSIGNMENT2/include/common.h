@@ -4,6 +4,8 @@
 #include <pcap.h>
 #include <netinet/in.h>
 
+/* Most fo the structures in this file are referred from http://www.tcpdump.org/pcap.html */
+
 /* Ethernet addresses are 6 bytes */
 #define ETHER_ADDR_LEN	6
 
@@ -85,4 +87,5 @@ struct sniff_udp {
 	short	uh_ulen;		/* udp length */
 	u_short	uh_sum;			/* udp checksum */
 };
+
 #endif
