@@ -162,7 +162,7 @@ void print_out(u_char *payload)
 			cout << ":";
 	}
 	printf(" type 0x%x", out.eth_type);
-	cout << " len " << out.payload_len;
+	cout << " len " << out.len;
 	if (strcmp(out.protocol, "ICMP"))
 		cout << " " << out.src_ip << ":" << out.src_port << " -> " << out.dst_ip << ":" << out.dst_port << " ";
 	else
