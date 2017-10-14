@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 #include <string>
 
-/*TODO: ARP, RARP, str matching */
+/*TODO:fff mac problem */
 
 using namespace std;
 
@@ -101,8 +101,10 @@ struct out_t {
 	int arp_len;
 };
 
+/* Output structure to print the fields  */
 out_t out;
 
+/* Print the payload in hex and human readable format */
 void print_payload(uint8_t *buf)
 {
 	int i = 0, j = 0;
@@ -123,7 +125,7 @@ void print_payload(uint8_t *buf)
 		/* 4 spaces */
 		printf("    ");
 		for (i = 0; i < 16 && ((i+ j)  < out.payload_len); i++) {
-			printf("%c ", out.payload[j + i]);
+			printf("%c", out.payload[j + i]);
 			if (i != 0 && i % 16 == 0)
 				printf("\n");
 		}
@@ -182,13 +184,13 @@ void print_arp()
 
 	cout << buf << " ";
 	for (int i = 0; i < 6; i++) {
-		printf("%.2x", out.sender_mac[i]);
+		printf("%.2x", out.src_mac[i]);
 		if (i != 5)
 			cout << ":";
 	}
 	cout << " -> " ;
 	for (int i = 0; i < 6; i++) {
-		printf("%.2x", out.target_mac[i]);
+		printf("%.2x", out.dst_mac[i]);
 		if (i != 5)
 			cout << ":";
 	}
@@ -233,8 +235,6 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 		case ETHERTYPE_ARP:
 		{
 			arp_hdr_t *arp_hdr = (arp_hdr_t *)(packet + SIZE_ETH_HDR);
-			memcpy(out.sender_mac, arp_hdr->sender_mac, 6);
-			memcpy(out.target_mac, arp_hdr->target_mac, 6);
 			memcpy(out.sender_ip, arp_hdr->sender_ip, 4);
 			memcpy(out.target_ip, arp_hdr->target_ip, 4);
 			out.arp_len = out.len - SIZE_ETH_HDR;
@@ -280,6 +280,7 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			strcpy(out.protocol, "IP");
 			return;
 		default:
+			cout << "OTHER" << endl;
 			strcpy(out.protocol, "OTHER");
 			return;
 	}
@@ -329,6 +330,7 @@ int main(int argc, char *argv[])
 	/* Parse and populate all the input arguments */
 	parse_args(argc, argv);
 
+/* TODO: Delete */
 /* Check for args. Remove later */
 #if 0
 	if (get_flag(ARG_FLAG_STRING))
@@ -352,18 +354,19 @@ int main(int argc, char *argv[])
 	struct pcap_pkthdr header;
 	const u_char *packet;
 
+	/* If device is given by the user. */
 	if (get_flag(ARG_FLAG_DEVICE)) {
 		dev = in_args.dev;
+	/* If file given by the device */
 	} else if (get_flag(ARG_FLAG_FILE)) {
 		handle = pcap_open_offline(in_args.file, err_buf);
 		goto PROCESS;
+	/* Lookup for devices */
 	} else {
 		dev = pcap_lookupdev(err_buf);
 		if (dev == NULL)
 			cout << "No Device Found" << endl;
-		cout << "Device " << dev << endl;
 	}
-
 
 	if (pcap_lookupnet(dev, &net, &mask, err_buf) == -1) {
 		cout << "Caould not get netmask : Error " << err_buf << endl;
