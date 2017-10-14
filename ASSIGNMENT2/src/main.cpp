@@ -112,6 +112,8 @@ out_t out;
 void print_payload(uint8_t *buf)
 {
 	int i = 0, j = 0;
+	if (out.payload_len == 0)
+		return;
 
 	while (1) {
 		for (i = 0; i < 16 && ((i + j) < out.payload_len); i++) {
@@ -178,6 +180,7 @@ void print_out(u_char *payload)
 	cout << endl;
 
 	print_payload(payload);
+	cout << endl;
 }
 
 void print_arp()
@@ -221,6 +224,7 @@ void print_arp()
 	cout << " " << out.protocol;
 
 	cout << endl;
+	cout << endl;
 }
 
 void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
@@ -253,31 +257,13 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			strcpy(out.protocol, "ARP");
 			out.payload = "";
 			out.payload_len = out.arp_len;
-			int i;
-
-			for (i = 0; i < out.arp_len; i++) {
-				if (isprint(payload[i]))
-					out.payload += (char)payload[i];
-				else
-					out.payload += '.';
-			}
-
-			if (get_flag(ARG_FLAG_STRING)) {
-				if (out.payload.find(string(in_args.string)) != std::string::npos) {
-					print_arp();
-					return;
-				} else {
-					return;
-				}
-			}
-
-			print_arp();
-			return;
+			goto PRINT_OUT;
 			break;
 		}
 		default:
-			cout << "RAW PACKET" << endl;
-			print_payload(payload);
+			payload = (u_char *)(packet);
+			out.payload_len = out.len;
+			strcpy(out.protocol, "OTHER");
 			return;
 	}
 
@@ -328,6 +314,7 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			break;
 	}
 
+PRINT_OUT:
 	out.payload = "";
 	int i;
 	/* TODO: Try checking for 10, 11 and 13 also */
@@ -346,7 +333,10 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			return;
 	}
 
-	print_out(payload);
+	if (!strcmp(out.protocol, "ARP"))
+		print_arp();
+	else
+		print_out(payload);
 
 	/* Reset the values */
 	out.len = 0;
