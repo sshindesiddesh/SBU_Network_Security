@@ -61,6 +61,8 @@ struct sniff_tcp {
 	u_short th_urp;		/* urgent pointer */
 };
 
+/* Arp protocol header
+ */
 struct arp_hdr_t {
 	uint16_t htype;
 	uint16_t ptype;
@@ -71,5 +73,16 @@ struct arp_hdr_t {
 	uint8_t sender_ip[4];
 	uint8_t target_mac[6];
 	uint8_t target_ip[4];
+};
+
+/*
+ * Udp protocol header.
+ * Per RFC 768, September, 1981.
+ */
+struct sniff_udp {
+	u_short	uh_sport;		/* source port */
+	u_short	uh_dport;		/* destination port */
+	short	uh_ulen;		/* udp length */
+	u_short	uh_sum;			/* udp checksum */
 };
 #endif

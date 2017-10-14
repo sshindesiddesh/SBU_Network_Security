@@ -162,8 +162,11 @@ void print_out(u_char *payload)
 			cout << ":";
 	}
 	printf(" type 0x%x", out.eth_type);
-	cout << " len " << out.len;
-	cout << " " << out.src_ip << ":" << out.src_port << " -> " << out.dst_ip << ":" << out.dst_port << " ";
+	cout << " len " << out.payload_len;
+	if (strcmp(out.protocol, "ICMP"))
+		cout << " " << out.src_ip << ":" << out.src_port << " -> " << out.dst_ip << ":" << out.dst_port << " ";
+	else
+		cout << " " << out.src_ip << " -> " << out.dst_ip << " ";
 	cout << " " << out.protocol;
 
 	cout << endl;
@@ -219,6 +222,8 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	const struct sniff_ethernet *eth;
 	const struct sniff_ip *ip;
 	const struct sniff_tcp *tcp;
+	const struct sniff_udp *udp;
+
 	u_char *payload;
 	int ip_size, tcp_size;
 	out.ts = header->ts;
@@ -240,7 +245,6 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			out.arp_len = out.len - SIZE_ETH_HDR;
 			payload = (u_char *)(arp_hdr);
 			strcpy(out.protocol, "ARP");
-			print_arp();
 			out.payload = "";
 			out.payload_len = out.arp_len;
 			int i;
@@ -251,7 +255,15 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 				else
 					out.payload += '.';
 			}
-			print_payload((uint8_t *)payload);
+			if (get_flag(ARG_FLAG_STRING)) {
+				if (out.payload.find(string(in_args.string)) != std::string::npos) {
+					print_arp();
+					return;
+				} else {
+					return;
+				}
+			}
+			print_arp();
 			return;
 			break;
 		}
@@ -264,12 +276,10 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	ip = (struct sniff_ip *)(packet + SIZE_ETH_HDR);
 	ip_size = IP_HL(ip) * 4;
 	if (ip_size < 20) {
-		return;
+		cout << "Invalid IP Packet" << endl;
 		ip_size = 0;
+		return;
 	}
-#if 0
-		cout << "Not a IP packet" << endl;
-#endif
 
 	strcpy(out.src_ip, inet_ntoa(ip->ip_src));
 	strcpy(out.dst_ip, inet_ntoa(ip->ip_dst));
@@ -278,38 +288,36 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	switch (ip->ip_p) {
 		case IPPROTO_TCP:
 			strcpy(out.protocol, "TCP");
+			tcp = (struct sniff_tcp *)(packet + SIZE_ETH_HDR + ip_size);
+			tcp_size = TH_OFF(tcp) * 4;
+			if (tcp_size < 20) {
+				cout << "Invalid TCP Packet" << endl;
+				tcp_size = 0;
+				return;
+			}
+			out.src_port = ntohs(tcp->th_sport);
+			out.dst_port = ntohs(tcp->th_dport);
+			payload = (u_char *)(packet + SIZE_ETH_HDR + ip_size + tcp_size);
+			out.payload_len = ntohs(ip->ip_len) - (ip_size + tcp_size);
 			break;
 		case IPPROTO_UDP:
 			strcpy(out.protocol, "UDP");
+			udp = (struct sniff_udp *)(packet + SIZE_ETH_HDR + ip_size);
+			out.src_port = ntohs(udp->uh_sport);
+			out.dst_port = ntohs(udp->uh_dport);
+			payload = (u_char *)(packet + SIZE_ETH_HDR + ip_size + sizeof(udp));
+			out.payload_len = ntohs(ip->ip_len) - (ip_size + sizeof(udp));
 			break;
 		case IPPROTO_ICMP:
+			payload = (u_char *)(packet + SIZE_ETH_HDR + ip_size + 8);
+			out.payload_len = ntohs(ip->ip_len) - (ip_size + 8);
 			strcpy(out.protocol, "ICMP");
 			break;
-		case IPPROTO_IGMP:
-			strcpy(out.protocol, "IGMP");
-			return;
-		case IPPROTO_IP:
-			strcpy(out.protocol, "IP");
-			return;
 		default:
 			cout << "OTHER" << endl;
 			strcpy(out.protocol, "OTHER");
 			return;
 	}
-
-	tcp = (struct sniff_tcp *)(packet + SIZE_ETH_HDR + ip_size);
-	tcp_size = TH_OFF(tcp) * 4;
-	if (tcp_size < 20)
-		tcp_size = 0;
-#if 0
-		cout << "Not a TCP packet" << endl;
-#endif
-
-	out.src_port = ntohs(tcp->th_sport);
-	out.dst_port = ntohs(tcp->th_dport);
-
-	payload = (u_char *)(packet + SIZE_ETH_HDR + ip_size + tcp_size);
-	out.payload_len = out.len - (SIZE_ETH_HDR + ip_size + tcp_size);
 
 	out.payload = "";
 	int i;
@@ -335,6 +343,8 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	out.len = 0;
 	out.payload = "";
 	out.payload_len = 0;
+	out.src_port = 0;
+	out.dst_port = 0;
 }
 
 int main(int argc, char *argv[])
