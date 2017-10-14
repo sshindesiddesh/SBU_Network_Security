@@ -238,14 +238,26 @@ void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			memcpy(out.sender_ip, arp_hdr->sender_ip, 4);
 			memcpy(out.target_ip, arp_hdr->target_ip, 4);
 			out.arp_len = out.len - SIZE_ETH_HDR;
+			payload = (u_char *)(arp_hdr);
 			strcpy(out.protocol, "ARP");
 			print_arp();
+			out.payload = "";
+			out.payload_len = out.arp_len;
+			int i;
+			/* TODO: Try checking for 10, 11 and 13 also */
+			for (i = 0; i < out.arp_len; i++) {
+				if (isprint(payload[i]))
+					out.payload += (char)payload[i];
+				else
+					out.payload += '.';
+			}
+			print_payload((uint8_t *)payload);
 			return;
 			break;
 		}
 		default:
 			cout << "RAW PACKET" << endl;
-			print_payload((uint8_t *)(packet + SIZE_ETH_HDR));
+			print_payload(payload);
 			return;
 	}
 
