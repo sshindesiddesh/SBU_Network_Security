@@ -57,6 +57,10 @@ int parse_args(int argc, char *argv[])
 				i += 2;
 				break;
 			case 's':
+				if (!argv[i + 1]) {
+					i += 1;
+					break;
+				}
 				in_args.string = strdup(argv[i + 1]);
 				set_flag(ARG_FLAG_STRING);
 				i += 2;
