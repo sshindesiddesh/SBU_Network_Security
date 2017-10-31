@@ -18,6 +18,6 @@ all: $(OBJS)
 clean:
 	$(AT)rm -f $(ODIR)/*.o
 	$(AT)rm -rf $(ODIR)
-	$(AT)rm -rf mydump
+	$(AT)rm -rf pbproxy
 run:
 	sudo ./my_dump
