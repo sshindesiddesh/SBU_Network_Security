@@ -1,0 +1,66 @@
+#### Netcat
+
+1) Simple nc
+
+Server> nc -l -p 12345
+Client> nc 192.168.142.131 12345
+Client> nc 192.168.142.131 22
+Client> nc www.google.com 80
+
+2) File transfer
+
+Server> nc -l -p 12345 > out
+Client> echo "this is a test" > file1
+Client> nc 192.168.142.131 12345 < file1
+
+3) Encrypted file transfer
+
+Server> nc -l -p 12345 | openssl enc -aes-256-cbc -a -k passw0rd -d > out &
+Server> sudo tcpdump -n -i eth0 -q -A port 12345 and greater 68
+Client> cat file1 | openssl enc -aes-256-cbc -a -k passw0rd | nc 192.168.142.131 12345
+
+4) Remote shell
+
+Server> nc -l -p 12345 -e /bin/bash
+Client> nc 192.168.142.131 12345
+
+5) Webserver
+
+Server> while true; do nc -l -p 8080 -q 1 < test.html; done
+Client> wget 192.168.142.131:8080
+
+6) Local port forwarding
+
+# Access a blocked third-party website through the remote host
+Client> ssh -L12345:icanhazip.com:80 192.168.142.131
+
+# Access a service listening on a blocked port (55555) on the remote host
+Server> nc -l -p 55555
+Client> ssh -L12345:localhost.com:55555 192.168.142.131
+
+7) Remote port forwarding
+
+# Enable public access to a service (localhost:8888) running on a private network
+Client> nc -l -p 8888
+Client> ssh -R12345:localhost:8888 192.168.142.131
+
+
+#### Homework 3 examples
+
+1) pbproxy simple example 
+
+# emulated pbproxy (server side)
+Server> nc -l -p 2222 -c 'nc localhost 5555' &
+Server> netstat -natp | grep LISTEN
+
+# emulated TCP service
+Server> nc -l -p 5555
+
+# emulated pbproxy (client side)
+Client> echo "test" | nc server.cs.stonybrook.edu 2222
+
+2) pbproxy ssh example 
+
+Server> nc -l -p 2222 -c 'nc localhost 22'
+Client> ssh -o "ProxyCommand nc server.cs.stonybrook.edu 2222" localhost
+Server> sudo netstat -natp | grep ESTABL
