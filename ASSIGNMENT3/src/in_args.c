@@ -1,13 +1,36 @@
 #include <in_args.h>
 
-uint8_t arg_flag = 0;
-
 extern in_args_t in_args;
+
+uint8_t arg_flag = 0;
 
 void input_error()
 {
 	printf("Invalid Arguments\n");
 	return;
+}
+
+char *read_key(char *filename)
+{
+	FILE *fp = fopen(filename, "rb");
+	char *key;
+	uint32_t length;
+	if (!fp) {
+		printf("Key file read Error\n");
+		return NULL;
+	}
+	fseek(fp, 0, SEEK_END);
+	length = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	key = (char *)malloc(length);
+	if (!key) {
+		printf("Key memory allcation Error\n");
+		fclose(fp);
+		return NULL;
+	}
+	fread(key, 1, length, fp);
+	fclose(fp);
+	return key;
 }
 
 /* Function to parse input arguments */
@@ -57,6 +80,7 @@ int parse_args(int argc, char *argv[])
 					break;
 				}
 				in_args.file = strdup(argv[i + 1]);
+				in_args.key = read_key(in_args.file);
 				set_flag(ARG_FLAG_FILE);
 				i += 2;
 				break;
@@ -72,6 +96,7 @@ void print_args()
 {
 	if (get_flag(ARG_FLAG_FILE)) {
 		printf("File %s\n", in_args.file);
+		printf("Key %s\n", in_args.key);
 	}
 	if (get_flag(ARG_FLAG_LPORT)) {
 		printf("LPORT %d\n", in_args.local_port);

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 /* Generic Macros to set and clear bits in a variable */
 #define set_flag(y) (arg_flag |= (1 << y))
@@ -22,6 +23,7 @@ typedef struct in_args_t {
 	uint16_t local_port;
 	char *dest_name;
 	uint16_t dest_port;
+	char *key;
 } in_args_t;
 
 int parse_args(int argc, char *argv[]);
