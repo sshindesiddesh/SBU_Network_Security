@@ -10,10 +10,10 @@ OBJS=$(patsubst $(SDIR)/%.c, $(ODIR)/%.o, $(SRCS))
 	
 $(ODIR)/%.o: $(SDIR)/%.c
 	$(AT)mkdir -p $(ODIR)
-	$(AT)$(CC) $(INC) -c $< -o $@ $(LIBS)pcap
+	$(AT)$(CC) $(INC) -c $< -o $@ $(LIBS)crypto
 
 all: $(OBJS)
-	$(AT)$(CC) $(INC) -o pbproxy $^ $(LIBS)pcap
+	$(AT)$(CC) $(INC) -o pbproxy $^ $(LIBS)crypto
 
 clean:
 	$(AT)rm -f $(ODIR)/*.o
