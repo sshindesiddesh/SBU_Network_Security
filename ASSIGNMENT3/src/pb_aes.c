@@ -15,17 +15,18 @@ void init_ctr(ctr_st *st, uint8_t *iv)
 
 uint8_t *get_iv()
 {
-	uint8_t *iv = (uint8_t *)malloc(sizeof(uint8_t) * 16);
+	uint8_t *iv = (uint8_t *)malloc(sizeof(uint8_t) * 8);
 	if (!RAND_bytes(iv, 8))
 		printf("\nError in RAND_Bytes...\n");
 	return iv;
 }
 
-void aes_ctr_encrypt(uint8_t *msg, uint8_t *cipher, uint8_t *iv)
+void aes_ctr_encrypt(uint8_t *msg, uint8_t *cipher, uint8_t *iv, int size)
 {
 	init_ctr(&st, iv);
 	AES_KEY aes_key;
-	AES_set_encrypt_key(in_args.key, 128, &aes_key);
-	AES_ctr128_encrypt(msg, cipher, AES_BLOCK_SIZE, &aes_key, st.ivec, st.ecount, &st.num);
+	char *key = "whoami";
+	AES_set_encrypt_key(key, 128, &aes_key);
+	AES_ctr128_encrypt(msg, cipher, size, &aes_key, st.ivec, st.ecount, &st.num);
 }
 
