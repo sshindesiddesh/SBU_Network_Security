@@ -6,7 +6,7 @@ uint8_t arg_flag = 0;
 
 void input_error()
 {
-	printf("Invalid Arguments\n");
+	//printf("Invalid Arguments\n");
 	return;
 }
 
@@ -37,8 +37,10 @@ char *read_key(char *filename)
 int parse_args(int argc, char *argv[])
 {
 	/* No argument is given */
-	if (argc == 1)
+	if (argc == 1) {
 		arg_flag = 0;
+		return -1;
+	}
 
 	int i = 0;
 	char x = 0;
@@ -48,6 +50,7 @@ int parse_args(int argc, char *argv[])
 		} else {
 				if (!argv[i]) {
 					input_error();
+					return -1;
 					break;
 				}
 				in_args.dest_name = strdup(argv[i]);
@@ -55,6 +58,7 @@ int parse_args(int argc, char *argv[])
 				i++;
 				if (!argv[i]) {
 					input_error();
+					return -1;
 					break;
 				}
 				in_args.dest_port = atoi(argv[i]);
@@ -67,6 +71,7 @@ int parse_args(int argc, char *argv[])
 				if (!argv[i + 1]) {
 					i += 1;
 					input_error();
+					return -1;
 					break;
 				}
 				in_args.local_port = atoi(argv[i + 1]);
@@ -77,6 +82,7 @@ int parse_args(int argc, char *argv[])
 				if (!argv[i + 1]) {
 					i += 1;
 					input_error();
+					return -1;
 					break;
 				}
 				in_args.file = strdup(argv[i + 1]);
@@ -86,6 +92,7 @@ int parse_args(int argc, char *argv[])
 				break;
 			default:
 				input_error();
+				return -1;
 				i++;
 				break;
 		}

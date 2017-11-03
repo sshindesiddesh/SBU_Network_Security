@@ -9,7 +9,11 @@ in_args_t in_args;
 
 int main(int argc, char *argv[])
 {
-	parse_args(argc, argv);
+	int ret = parse_args(argc, argv);
+	if (ret == -1) {
+		printf(" Invalid Arguments\n");
+		return 0;
+	}
 	print_args();
 	char msg[] = "hey";
 	uint8_t cipher[AES_BLOCK_SIZE];
