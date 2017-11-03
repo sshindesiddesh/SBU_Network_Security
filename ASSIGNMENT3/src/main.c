@@ -24,30 +24,52 @@ int main(int argc, char *argv[])
 	if (get_flag(ARG_FLAG_LPORT)) {
 		uint8_t server_in_buf[1024] = {0};
 		uint8_t server_out_buf[1024] = {0};
+		int size;
+		uint8_t *iv = get_iv();
 		int server_sock = create_serv_sock(8080);
+		fcntl(STDIN_FILENO,F_SETFL,O_NONBLOCK);
+		fcntl(server_sock,F_SETFL,O_NONBLOCK);
 		while (1) {
-			int size = read(server_sock, server_in_buf, BUF_SIZE);
-			uint8_t iv[8];
-			if (size < 9)
-				continue;
-			memcpy(iv, server_in_buf, 8);
-			aes_ctr_encrypt(server_in_buf + 8, server_out_buf, iv, size - 8);
-			write(STDOUT_FILENO, server_out_buf, size - 8);
+			size = read(STDIN_FILENO, server_in_buf, BUF_SIZE);
+			if (size > 0) {
+				memcpy(iv, server_in_buf, 8);
+				iv = get_iv();
+				memcpy(server_out_buf, iv, 8);
+				aes_ctr_encrypt(server_in_buf, server_out_buf + 8, iv, size);
+				write(server_sock, server_out_buf, size + 8);
+			}
+
+			size = read(server_sock, server_in_buf, BUF_SIZE);
+			if (size > 8) {
+				memcpy(iv, server_in_buf, 8);
+				aes_ctr_encrypt(server_in_buf + 8, server_out_buf, iv, size - 8);
+				write(STDOUT_FILENO, server_out_buf, size - 8);
+			}
 		}
 	/* Client */
 	} else {
 		char client_in_buf[1024] = {0};
 		char client_out_buf[1024] = {0};
+		int size;
+		uint8_t *iv;
 		int client_fd = create_client_sock(8080);
 		fcntl(STDIN_FILENO,F_SETFL,O_NONBLOCK);
+		fcntl(client_fd,F_SETFL,O_NONBLOCK);
 		while (1) {
-			int size = read(STDIN_FILENO, client_in_buf, BUF_SIZE);
-			if (size < 1)
-				continue;
-			uint8_t *iv = get_iv();
-			memcpy(client_out_buf, iv, 8);
-			aes_ctr_encrypt(client_in_buf, client_out_buf + 8, iv, size);
-			write(client_fd, client_out_buf, size + 8);
+			size = read(STDIN_FILENO, client_in_buf, BUF_SIZE);
+			if (size > 0) {
+				iv = get_iv();
+				memcpy(client_out_buf, iv, 8);
+				aes_ctr_encrypt(client_in_buf, client_out_buf + 8, iv, size);
+				write(client_fd, client_out_buf, size + 8);
+			}
+
+			size = read(client_fd, client_in_buf, BUF_SIZE);
+			if (size > 8) {
+				memcpy(iv, client_in_buf, 8);
+				aes_ctr_encrypt(client_in_buf + 8, client_out_buf, iv, size - 8);
+				write(STDOUT_FILENO, client_out_buf, size - 8);
+			}
 		}
 	}
 
