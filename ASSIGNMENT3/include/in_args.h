@@ -22,7 +22,7 @@ uint8_t arg_flag;
 /* Structure to store input arguments */
 typedef struct in_args_t {
 	char *file;
-	uint16_t local_port;
+	int local_port;
 	char *dest_name;
 	uint16_t dest_port;
 	char *key;
