@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 		char client_out_buf[1024] = {0};
 		int size;
 		uint8_t *iv = get_iv();
-		int client_fd = create_client_sock(8080);
+		int client_fd = create_client_sock(8080, NULL);
 		fcntl(STDIN_FILENO,F_SETFL,O_NONBLOCK);
 		fcntl(client_fd,F_SETFL,O_NONBLOCK);
 		while (1) {

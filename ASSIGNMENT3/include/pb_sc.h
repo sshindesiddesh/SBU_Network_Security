@@ -9,7 +9,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
-int create_client_sock(int port);
+int create_client_sock(int port, char *ip);
 int create_serv_sock(int port);
 #endif
