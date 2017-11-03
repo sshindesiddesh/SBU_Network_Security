@@ -1,16 +1,9 @@
-#include <stdio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <stdlib.h>
-#include <string.h>
+#include <pb_sc.h>
 
-#define S_PORT	8080
-
-int main()
+int create_serv_sock(int port)
 {
 	struct sockaddr_in sockaddr;
 	int server_fd, opt = 1, server_sock, addrlen = sizeof(sockaddr);
-	char server_buf[1024] = {0};
 
 	server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (server_fd == 0) {
@@ -25,7 +18,7 @@ int main()
 
 	sockaddr.sin_family = AF_INET;
 	sockaddr.sin_addr.s_addr = INADDR_ANY;
-	sockaddr.sin_port = htons(S_PORT);
+	sockaddr.sin_port = htons(port);
 
 	if (bind(server_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
 		printf("Server socket bind Error\n");
@@ -42,11 +35,5 @@ int main()
 		return 0;
 	}
 
-	int valread = recv(server_sock, server_buf, 1024, 0);
-	printf("Server received : %s\n", server_buf);
-
-	char *hello = "Hi Client";
-	send(server_sock, hello, strlen(hello), 0);
-
-	return 0;
-} 
+	return server_sock;
+}
