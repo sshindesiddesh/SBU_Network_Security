@@ -2,8 +2,6 @@
 
 extern in_args_t in_args;
 
-uint8_t arg_flag = 0;
-
 void input_error()
 {
 	//printf("Invalid Arguments\n");

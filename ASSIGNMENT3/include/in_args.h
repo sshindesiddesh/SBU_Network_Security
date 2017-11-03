@@ -17,6 +17,8 @@
 #define ARG_FLAG_DNAME		2
 #define	ARG_FLAG_DPORT		3
 
+uint8_t arg_flag;
+
 /* Structure to store input arguments */
 typedef struct in_args_t {
 	char *file;

@@ -25,8 +25,7 @@ void aes_ctr_encrypt(uint8_t *msg, uint8_t *cipher, uint8_t *iv, int size)
 {
 	init_ctr(&st, iv);
 	AES_KEY aes_key;
-	char *key = "whoami";
-	AES_set_encrypt_key(key, 128, &aes_key);
+	AES_set_encrypt_key(in_args.key, 128, &aes_key);
 	AES_ctr128_encrypt(msg, cipher, size, &aes_key, st.ivec, st.ecount, &st.num);
 }
 
