@@ -6,8 +6,8 @@
 #include <pb_aes.h>
 #include <pb_sc.h>
 
-#define TRANSP_SERVER	1
-#define KEY_ENABLE	1
+#define TRANSP_SERVER	0
+#define KEY_ENABLE	0
 
 #define BUF_SIZE	1024
 
@@ -57,19 +57,21 @@ int main(int argc, char *argv[])
 				memcpy(iv, server_in_buf, 8);
 				aes_ctr_encrypt(server_in_buf + 8, server_out_buf, iv, size - 8);
 				write(client_sock, server_out_buf, size - 8);
-				size = read(client_sock, server_in_buf, BUF_SIZE);
-				if (size > 0) {
-					iv = get_iv();
-					memcpy(server_out_buf, iv, 8);
-					aes_ctr_encrypt(server_in_buf, server_out_buf + 8, iv, size);
-					write(server_sock, server_out_buf, size + 8);
-				}
+			}
+			size = read(client_sock, server_in_buf, BUF_SIZE);
+			if (size > 0) {
+				iv = get_iv();
+				memcpy(server_out_buf, iv, 8);
+				aes_ctr_encrypt(server_in_buf, server_out_buf + 8, iv, size);
+				write(server_sock, server_out_buf, size + 8);
 			}
 #else
-			size = read(server_sock, server_in_buf, BUF_SIZE);
-			if (size > 0) {
-				write(client_sock, server_in_buf, size);
-				size = read(client_sock, server_in_buf, BUF_SIZE);
+			while ((size = read(server_sock, server_in_buf, BUF_SIZE)) > 0) {
+				if (size > 0) {
+					write(client_sock, server_in_buf, size);
+				}
+			}
+			while ((size = read(client_sock, server_in_buf, BUF_SIZE)) > 0) {
 				if (size > 0) {
 					write(server_sock, server_in_buf, size);
 				}

@@ -13,4 +13,5 @@
 
 int create_client_sock(int port, char *ip);
 int create_serv_sock(int port);
+int serv_accept();
 #endif

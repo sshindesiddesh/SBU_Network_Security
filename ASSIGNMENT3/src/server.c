@@ -1,9 +1,11 @@
 #include <pb_sc.h>
 
+static struct sockaddr_in sockaddr;
+static int server_fd;
+
 int create_serv_sock(int port)
 {
-	struct sockaddr_in sockaddr;
-	int server_fd, opt = 1, server_sock, addrlen = sizeof(sockaddr);
+	int opt = 1, server_sock;
 
 	server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (server_fd == 0) {
@@ -30,10 +32,17 @@ int create_serv_sock(int port)
 		return 0;
 	}
 
+	server_sock = serv_accept();
+
+	return server_sock;
+}
+
+int serv_accept()
+{
+	int addrlen = sizeof(sockaddr), server_sock;
 	if ((server_sock = accept(server_fd, (struct sockaddr *)&sockaddr, (socklen_t *)&addrlen)) < 0) {
 		printf("Server accept Error\n");
-		return 0;
+		return -1;
 	}
-
 	return server_sock;
 }
