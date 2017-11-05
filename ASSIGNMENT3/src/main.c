@@ -9,7 +9,7 @@
 #define TRANSP_SERVER	0
 #define KEY_ENABLE	1
 
-#define BUF_SIZE	4096
+#define BUF_SIZE	1024
 
 in_args_t in_args;
 
@@ -44,13 +44,13 @@ int main(int argc, char *argv[])
 				aes_ctr_encrypt(server_in_buf, server_out_buf + 8, iv, size);
 				write(server_sock, server_out_buf, size + 8);
 			}
-			while ((size = read(server_sock, server_in_buf, BUF_SIZE + 8)) >= 0) {
+			while ((size = read(server_sock, server_in_buf, BUF_SIZE + 8)) > 0) {
 				memcpy(iv, server_in_buf, 8);
 				aes_ctr_encrypt(server_in_buf + 8, server_out_buf, iv, size - 8);
 				write(STDOUT_FILENO, server_out_buf, size - 8);
 			}
 #elif KEY_ENABLE
-			while ((size = read(server_sock, server_in_buf, BUF_SIZE)) >= 0) {
+			while ((size = read(server_sock, server_in_buf, BUF_SIZE + 8)) > 0) {
 					memcpy(iv, server_in_buf, 8);
 					aes_ctr_encrypt(server_in_buf + 8, server_out_buf, iv, size - 8);
 					write(client_sock, server_out_buf, size - 8);
