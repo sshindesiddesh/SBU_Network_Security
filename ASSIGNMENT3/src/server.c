@@ -27,7 +27,7 @@ int create_serv_sock(int port)
 		return 0;
 	}
 
-	if (listen(server_fd, 5) < 0) {
+	if (listen(server_fd, 20) < 0) {
 		printf("Server listen Error\n");
 		return 0;
 	}

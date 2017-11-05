@@ -5,6 +5,15 @@
 #include <in_args.h>
 #include <pb_aes.h>
 #include <pb_sc.h>
+#include <pthread.h>
+
+#if 0
+/* Known Issues */
+1. Per client connection termination.
+2. CTR block size for the counter.
+3. ssh hangs after some time
+4. Input argument bugs for compulsion
+#endif
 
 #define TRANSP_SERVER	0
 #define KEY_ENABLE	1
@@ -29,19 +38,20 @@ uint8_t *read_iv(int fd)
 	return iv;
 }
 
-
-void server_loop(int server_sock)
+void *server_loop(void *p)
 {
+	int server_sock = (uint64_t)p;
+	printf("client SOCK %d discovered\n", server_sock);
 	uint8_t server_in_buf[BUF_SIZE + 16] = {0};
 	uint8_t server_out_buf[BUF_SIZE + 16] = {0};
 	int size;
 	uint8_t *iv = read_iv(server_sock);
+	fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
+	fcntl(server_sock, F_SETFL, O_NONBLOCK);
 #if !TRANSP_SERVER
 	int client_sock = create_client_sock(in_args.dest_port, in_args.dest_name);
 	fcntl(client_sock, F_SETFL, O_NONBLOCK);
 #endif
-	fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
-	fcntl(server_sock, F_SETFL, O_NONBLOCK);
 	while (1) {
 #if TRANSP_SERVER
 		while ((size = read(STDIN_FILENO, server_in_buf, BUF_SIZE)) >= 0) {
@@ -114,6 +124,7 @@ void client_loop()
 
 int main(int argc, char *argv[])
 {
+	pthread_t tid;
 	arg_flag = 0;
 	int ret = parse_args(argc, argv);
 	if (ret == -1) {
@@ -122,10 +133,18 @@ int main(int argc, char *argv[])
 	}
 	//print_args();
 
+	if (!get_flag(ARG_FLAG_FILE) || !get_flag(ARG_FLAG_DNAME) || !get_flag(ARG_FLAG_DPORT)) {
+		printf("Invalid Arguments\n");
+		return 0;
+	}
+
 	/* Server */
 	if (get_flag(ARG_FLAG_LPORT)) {
-		int server_sock = create_serv_sock(in_args.local_port);
-		server_loop(server_sock);
+		uint64_t server_sock = create_serv_sock(in_args.local_port);
+		while (1) {
+			pthread_create(&tid, NULL, server_loop, (void *)server_sock);
+			server_sock = serv_accept();
+		}
 	/* Client */
 	} else {
 		client_loop();
