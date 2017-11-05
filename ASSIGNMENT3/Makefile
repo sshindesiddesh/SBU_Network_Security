@@ -13,7 +13,7 @@ $(ODIR)/%.o: $(SDIR)/%.c
 	$(AT)$(CC) $(INC) -c $< -o $@ $(LIBS)crypto
 
 all: $(OBJS)
-	$(AT)$(CC) $(INC) -o pbproxy $^ $(LIBS)crypto
+	$(AT)$(CC) $(INC) -o pbproxy $^ $(LIBS)crypto $(LIBS)pthread
 
 clean:
 	$(AT)rm -f $(ODIR)/*.o
