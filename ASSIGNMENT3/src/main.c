@@ -6,6 +6,7 @@
 #include <pb_aes.h>
 #include <pb_sc.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #if 0
 /* Known Issues */
@@ -17,8 +18,8 @@
 
 #define TRANSP_SERVER	0
 #define KEY_ENABLE	1
-
-#define BUF_SIZE	1024
+#define U_TICKS_DELAY	1000
+#define BUF_SIZE	4096
 
 in_args_t in_args;
 
@@ -42,10 +43,11 @@ void *server_loop(void *p)
 {
 	int server_sock = (uint64_t)p;
 	printf("client SOCK %d discovered\n", server_sock);
-	uint8_t server_in_buf[BUF_SIZE + 16] = {0};
-	uint8_t server_out_buf[BUF_SIZE + 16] = {0};
+	uint8_t server_in_buf[BUF_SIZE] = {0};
+	uint8_t server_out_buf[BUF_SIZE] = {0};
 	int size;
 	uint8_t *iv = read_iv(server_sock);
+	set_aes_key();
 	fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 	fcntl(server_sock, F_SETFL, O_NONBLOCK);
 #if !TRANSP_SERVER
@@ -66,10 +68,12 @@ void *server_loop(void *p)
 		while ((size = read(server_sock, server_in_buf, BUF_SIZE)) > 0) {
 				aes_ctr_encrypt(server_in_buf, server_out_buf, iv, size);
 				write(client_sock, server_out_buf, size);
+			usleep(U_TICKS_DELAY);
 		}
 		while ((size = read(client_sock, server_in_buf, BUF_SIZE)) >= 0) {
 				aes_ctr_encrypt(server_in_buf, server_out_buf, iv, size);
 				write(server_sock, server_out_buf, size);
+			usleep(U_TICKS_DELAY);
 		}
 #else
 		while ((size = read(server_sock, server_in_buf, BUF_SIZE)) >= 0) {
@@ -88,10 +92,11 @@ void *server_loop(void *p)
 
 void client_loop()
 {
-	char client_in_buf[BUF_SIZE + 16];
-	char client_out_buf[BUF_SIZE + 16];
+	char client_in_buf[BUF_SIZE];
+	char client_out_buf[BUF_SIZE];
 	int size;
 	uint8_t *iv = get_iv();
+	set_aes_key();
 	int client_fd = create_client_sock(in_args.dest_port, in_args.dest_name);
 	write(client_fd, iv, 8);
 	fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
@@ -101,11 +106,13 @@ void client_loop()
 		while ((size = read(STDIN_FILENO, client_in_buf, BUF_SIZE)) > 0) {
 			aes_ctr_encrypt(client_in_buf, client_out_buf, iv, size);
 			write(client_fd, client_out_buf, size);
+			usleep(U_TICKS_DELAY);
 		}
 
 		while ((size = read(client_fd, client_in_buf, BUF_SIZE)) > 0) {
 			aes_ctr_encrypt(client_in_buf, client_out_buf, iv, size);
 			write(STDOUT_FILENO, client_out_buf, size);
+			usleep(U_TICKS_DELAY);
 		}
 #else
 		size = read(STDIN_FILENO, client_in_buf, BUF_SIZE);
@@ -131,7 +138,7 @@ int main(int argc, char *argv[])
 		printf(" Invalid Arguments\n");
 		return 0;
 	}
-	//print_args();
+	/* print_args(); */
 
 	if (!get_flag(ARG_FLAG_FILE) || !get_flag(ARG_FLAG_DNAME) || !get_flag(ARG_FLAG_DPORT)) {
 		printf("Invalid Arguments\n");
@@ -144,6 +151,7 @@ int main(int argc, char *argv[])
 		while (1) {
 			pthread_create(&tid, NULL, server_loop, (void *)server_sock);
 			server_sock = serv_accept();
+			usleep(U_TICKS_DELAY);
 		}
 	/* Client */
 	} else {

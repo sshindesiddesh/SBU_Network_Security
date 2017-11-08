@@ -16,5 +16,6 @@ typedef struct ctr_st {
 void init_ctr(ctr_st *st, uint8_t *iv);
 void aes_ctr_encrypt(uint8_t *msg, uint8_t *cipher, uint8_t *iv, int size);
 uint8_t *get_iv();
+void set_aes_key();
 
 #endif

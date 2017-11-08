@@ -5,6 +5,8 @@ extern in_args_t in_args;
 
 ctr_st st;
 
+AES_KEY aes_key;
+
 void init_ctr(ctr_st *st, uint8_t *iv)
 {
 	st->num = 0;
@@ -21,11 +23,13 @@ uint8_t *get_iv()
 	return iv;
 }
 
+void set_aes_key()
+{
+	AES_set_encrypt_key(in_args.key, 128, &aes_key);
+}
+
 void aes_ctr_encrypt(uint8_t *msg, uint8_t *cipher, uint8_t *iv, int size)
 {
 	init_ctr(&st, iv);
-	AES_KEY aes_key;
-	AES_set_encrypt_key(in_args.key, 128, &aes_key);
 	AES_ctr128_encrypt(msg, cipher, size, &aes_key, st.ivec, st.ecount, &st.num);
 }
-
