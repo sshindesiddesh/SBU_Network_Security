@@ -1,28 +1,57 @@
 This is "plugboard" proxy application for adding an extra layer of protection to publicly accessible network services.
 
 Document has the application information in following order.
-1. Software Design Flow
-2. Sample Run
+1. Test Environment : 
+2. Software Design Flow
+3. Server Cient Data Exchange and Encryption Scheme
+4. Sample Run
 	a. SSH connection through Plugboard Proxy
 	b. Echo server client through Plugboard Proxy
 
-1. Software Design Flow:
+1. Test Environment:
+	Linux 4.10.0-38-generic #42~16.04.1-Ubuntu SMP Tue Oct 10 16:32:20 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux
+
+2. Software Design Flow:
 	Psuedo Code:
 	main:
 		get and check the input arguments
 		check for the -l flag
 		if l flag is preset:
-			Start the server and wait untill client connection initiation
-			Accept the client connection and spawn a thread to handle the client
-			Wait for another client connection initiation
+			Start the server and wait for a client to connect
+			Accept the client connection and spawn a thread to handle the client(handle_client)
+			Wait for another client connection
 		else:
 			start the proxy in client mode
 			connect to the server
-			capture input from the console
-			encrypt it and send to the server
-			decrypt and send it to the console
+			if input data is avaiable from the console
+				read, encrypt and send to the server
+			if input data is avaiable from the server
+				read, decrypt and send to the console
+	handle_client:
+		if input data available from the client
+			read, decrypt and send to the server
+		if input data available from the server
+			read, encrypt and send to the client
 
-2.Sample Run-
+Note : Reads are peformed in non-blocking mode.
+		
+
+3. Server Client Data Exchange and Encryption Scheme:
+	CTR mode is used for encryption. IV is generated randomly by the client and send to the server.
+
+	Client -> Server : Connection Initiation
+	Client -> Server : Initialisation Vector (IV)
+	If client has data:
+		Client -> Server : (Length of the data)
+		Client -> Server : (Encrypted data)
+	If server has data:
+		Server -> Client : (Length of the data)
+		Server -> Client : (Encrypted data)
+
+Note : Reads are peformed in non-blocking mode.
+
+4. Sample Run-
+
 a. Connection with the SSH server through pbproxy.
 
 	$cd <path-to-pbproxy>
@@ -30,6 +59,8 @@ a. Connection with the SSH server through pbproxy.
 
 Start the pbproxy
 	$./pbproxy -l 2222 -k src/key.txt localhost 22
+
+Note : Sample Key has been kept in the src/key.txt file for testing purpose.
 
 Connect client to the pbproxy
 	$ssh -o "ProxyCommand ./pbproxy -k src/key.txt localhost 2222" localhost
@@ -78,3 +109,5 @@ Example Output:
 	Hi, how are you
 	I am fine
 	I am fine
+
+c. Also tested negative case of connection denial for SSH when there is a key mismatch between server and client.
