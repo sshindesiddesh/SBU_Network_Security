@@ -1,5 +1,8 @@
+/* This file has all the functions for handling client side */
+
 #include <pb_sc.h>
 
+/* Create and initialize data for client side. */
 int create_client_sock(int port, char *ip)
 {
 	struct sockaddr_in serv_addr;

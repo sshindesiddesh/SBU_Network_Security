@@ -1,8 +1,11 @@
+/* This file  has functions for server handling. */
+
 #include <pb_sc.h>
 
 static struct sockaddr_in sockaddr;
 static int server_fd;
 
+/* Create server socket */
 int create_serv_sock(int port)
 {
 	int opt = 1, server_sock;
@@ -37,6 +40,7 @@ int create_serv_sock(int port)
 	return server_sock;
 }
 
+/* Accept client connection */
 int serv_accept()
 {
 	int addrlen = sizeof(sockaddr), server_sock;

@@ -1,13 +1,18 @@
+/* This file handles input arguments */
+
 #include <in_args.h>
 
 extern in_args_t in_args;
 
 void input_error()
 {
-	//printf("Invalid Arguments\n");
+#if 0
+	printf("Invalid Arguments\n");
+#endif
 	return;
 }
 
+/* Read AES Key from the file */
 char *read_key(char *filename)
 {
 	FILE *fp = fopen(filename, "rb");
@@ -97,6 +102,7 @@ int parse_args(int argc, char *argv[])
 	}
 }
 
+/* Print the input arguments */
 void print_args()
 {
 	if (get_flag(ARG_FLAG_FILE)) {
