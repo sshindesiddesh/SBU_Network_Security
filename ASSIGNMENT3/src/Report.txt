@@ -1,0 +1,80 @@
+This is "plugboard" proxy application for adding an extra layer of protection to publicly accessible network services.
+
+Document has the application information in following order.
+1. Software Design Flow
+2. Sample Run
+	a. SSH connection through Plugboard Proxy
+	b. Echo server client through Plugboard Proxy
+
+1. Software Design Flow:
+	Psuedo Code:
+	main:
+		get and check the input arguments
+		check for the -l flag
+		if l flag is preset:
+			Start the server and wait untill client connection initiation
+			Accept the client connection and spawn a thread to handle the client
+			Wait for another client connection initiation
+		else:
+			start the proxy in client mode
+			connect to the server
+			capture input from the console
+			encrypt it and send to the server
+			decrypt and send it to the console
+
+2.Sample Run-
+a. Connection with the SSH server through pbproxy.
+
+	$cd <path-to-pbproxy>
+	$make
+
+Start the pbproxy
+	$./pbproxy -l 2222 -k src/key.txt localhost 22
+
+Connect client to the pbproxy
+	$ssh -o "ProxyCommand ./pbproxy -k src/key.txt localhost 2222" localhost
+Output:
+	siddesh@siddesh:~/Fall2017/net_sec/ASSIGNMENT3$ ssh -o "ProxyCommand ./pbproxy -k src/key.txt localhost 2222" localhost
+	Welcome to Ubuntu 16.04.3 LTS (GNU/Linux 4.10.0-38-generic x86_64)
+
+	 * Documentation:  https://help.ubuntu.com
+	 * Management:     https://landscape.canonical.com
+	 * Support:        https://ubuntu.com/advantage
+
+	92 packages can be updated.
+	4 updates are security updates.
+
+	Last login: Thu Nov  9 19:41:24 2017 from 127.0.0.1
+	siddesh@siddesh:~$
+
+To terminate the connection, 'exit'
+	$exit
+Output:
+	siddesh@siddesh:~$ exit
+	logout
+	Connection to localhost closed.
+
+Can connect multiple clients one after another with similar procedure:
+
+
+b. Connection to echo server with through pbproxy
+
+	$cd <path-to-pbproxy>
+	$make
+
+Start the echo server with nc
+	$nc -l -p 2223 -c "/bin/cat"
+
+Start pbproxy
+	$./pbproxy -l 2222 -k src/key.txt localhost 2223
+
+Connect client to the pbproxy
+	$./pbproxy -k src/key.txt localhost 2222
+
+Type anything on the client and you see the echo
+Example Output:
+	siddesh@siddesh:~/Fall2017/net_sec/ASSIGNMENT3$ ./pbproxy -k src/key.txt localhost 2222
+	Hi, how are you
+	Hi, how are you
+	I am fine
+	I am fine

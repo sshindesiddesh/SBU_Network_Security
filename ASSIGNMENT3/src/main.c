@@ -208,6 +208,7 @@ int main(int argc, char *argv[])
 	if (get_flag(ARG_FLAG_LPORT)) {
 		uint64_t server_sock = create_serv_sock(in_args.local_port);
 		while (1) {
+			/* Spawn a new thread per client connection */
 			pthread_create(&tid, NULL, server_loop, (void *)server_sock);
 			server_sock = serv_accept();
 		}
