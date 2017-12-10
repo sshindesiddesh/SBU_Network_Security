@@ -1,0 +1,19 @@
+
+Required Python Libraries:
+Scapy : sudo apt-get install python-scapy
+Netifaces : sudo apt-get install python-netifaces
+Deque : sudo apt-get insatll python deque
+
+Steps for DNS Injection:
+sudo python dnsinject.py -h host.txt
+
+Capture tcpdump trace using
+sudo tcpdump -w dns_inject.pcap
+
+
+Steps for DNS detection:
+For trace file:
+sudo python dnsdetect.py -r dns.pcap
+
+Live Detection:
+sudo python dnsdetect.py
