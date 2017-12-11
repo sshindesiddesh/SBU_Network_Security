@@ -1,19 +1,68 @@
+Title : On path DNS injector and a passive DNS poisoning attack detector
 
-Required Python Libraries:
-Scapy : sudo apt-get install python-scapy
-Netifaces : sudo apt-get install python-netifaces
-Deque : sudo apt-get insatll python deque
+1. General system and environment:
+	Following code is tested on:
+		* OS : Linux 4.10.0-42-generic #46~16.04.1-Ubuntu SMP x86_64 GNU/Linux
 
-Steps for DNS Injection:
-sudo python dnsinject.py -h host.txt
+	Required packages and installation guide:
+		* python 2.7.12
+		* Required Python Libraries:
+		* Scapy : sudo apt-get install python-scapy
+		* Netifaces : sudo apt-get install python-netifaces
+		* Deque : sudo apt-get insatll python deque
 
-Capture tcpdump trace using
-sudo tcpdump -w dns_inject.pcap
+2. Step to Run:
+	-DNS Injection:
+		* Command - sudo python dnsinject.py -i enp0s3 -h host.txt "src host 172.24.18.239"
+	    -Alternatively, following commands also work fine
+		* sudo python dnsinject.py -h host.txt "src host 172.24.18.239"
+		* sudo python dnsinject.py -h host.txt
+		* sudo python dnsinject.py -i enp0s3 -h host.txt
+	    Sample Output:
+		#sudo python dnsinject.py -i enp0s3 -h host.txt "src host 172.24.18.239"
+		#
+		Hosts :  {'trial.example.com': '35.111.143.134', 'bar.example.com': '10.11.43.34',
+			'foo.example.com': '10.6.6.6', 'test.example.com': '10.11.43.34'}
+		Query bar.example.com
 
+		Spoofed IP is 10.11.43.34
+		Successfully Injected
 
-Steps for DNS detection:
-For trace file:
-sudo python dnsdetect.py -r dns.pcap
+		Note : On another machine following querry was performed
+		#nslookup bar.example.com
+		#
+	    A trace file is captured using tcpdump during this activity using following command
+		#sudo tcpdump -w dns_inject.pcap
 
-Live Detection:
-sudo python dnsdetect.py
+		Note: This is required for DNS poisoning detection.
+	-DNS Poisoning Detection:
+		* Command - sudo python dnsdetect.py -i enp0s3 "dst host 172.24.18.239" -r dns_inject.pcap
+	    - Alternatively, following commads also work fine for live detection / static analyis
+		* sudo python dnsdetect.py "dst host 172.24.18.239"
+		* sudo python dnsdetect.py -i enp0s3
+	    Sample Ouput:
+		#sudo python dnsdetect.py -i enp0s3 "dst host 172.24.18.239" -r dns_inject.pcap
+		#
+		DNS Posisoning Attack Detected
+		DNS Posisoning Attack Detected
+
+3. Design
+	- DNS Injection:
+		Following is the program flow :
+		- Capture input arguments from the user
+		- Start sniffing with approprate filter provided by user and on UDP port 53 for DNS
+		- When a packet arrives, check for DNS layer records
+		- Create a spoofed packet with similar attributes but spoofed IP
+		- Send it to the victim.
+	- Timing consideration of Posioning :
+		- Maximum responses are filtered because very specific filters are used. This helps us avoiding processing
+		  of unwanted packets.
+		- This reduces latency and increases the probability that the packet reaches the victim before the actual response.
+	- DNS Poisoning Detection :
+		Following is the program flow :
+		- Capture the input arguments from the user
+		- Start sniffing with appropriate filter provided by the user
+		- When a packet arrives, check it against all the packets present in the queue
+		- If there is packet with similar attributes except the IP, it means poisoning attack was performed
+		- Print the IP address list.
+	- DNS poisoning detection can also be performed life by ignoring the -r option

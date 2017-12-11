@@ -8,7 +8,7 @@ import netifaces as ni
 import time
 
 hosts = {}
-mip = '127.0.0.1'
+mip = ''
 soc = None
 
 # parse argumens
@@ -27,7 +27,7 @@ def get_args():
 		exp = exp + ' and ' + ' '.join(arg.expression)
 
 	# Parse host file and populate all hosts in a list with corresponding IP addresses
-	if (arg.h):
+	if (arg.h) :
 		print "Hosts : ",
 		with open(arg.h) as fp:
 			for line in fp:
@@ -60,7 +60,7 @@ def dns_packet(packet):
 			print "Will Not Inject"
 			return
 
-		print "Spoofed IP is", spf_ip;
+		print "\nSpoofed IP is", spf_ip;
 
 		# create a spoof DNS response packet
 		# Interchage src and dst IP
