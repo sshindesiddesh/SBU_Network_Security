@@ -8,21 +8,27 @@ import netifaces as ni
 from collections import deque
 
 hosts = {}
-my_ip = '127.0.0.1'
+mip = '127.0.0.1'
 soc = None
 
+# Get input arguments from the user
 def get_args():
 	parser = argparse.ArgumentParser(add_help=False);
 	parser.add_argument('-i', metavar='eth0');
-	parser.add_argument('-r', metavar='192.168.10.1');
+	parser.add_argument('-r', metavar='dns_detect.pcap');
 	parser.add_argument('expression', nargs='*', action='store');
 	arg = parser.parse_args();
-	if (arg.expression):
-		print arg.expression
-	return arg.i, arg.r, arg.expression;
+	# set default expression for DNS . UDP port 53
+	exp = 'udp port 53'
 
+	if (arg.expression):
+		exp = exp + ' and ' + ' '.join(arg.expression)
+	return arg.i, arg.r, exp;
+
+# Packet Queue
 packet_q = deque(maxlen = 10)
 
+# DNS detector invoked by SNIFF
 def dns_detect(packet):
 	if (UDP in packet and DNS in packet and packet.haslayer(DNSRR)):
 		if (len(packet_q) > 0):
@@ -37,15 +43,19 @@ def dns_detect(packet):
 					print "DNS Posisoning Attack Detected"
 		packet_q.append(packet)
 
-if __name__ == '__main__':
+def main():
 	exp = ''
 	[i, r, exp] = get_args();
+	# Offline file obtained from tcpdump
 	if (r) :
-		my_ip = ni.ifaddresses(i)[2][0]['addr'];
+		mip = ni.ifaddresses(i)[2][0]['addr'];
 		sniff(filter = 'udp port 53', offline = r, prn = dns_detect);
+	# live interface
 	elif(i):
-		my_ip = ni.ifaddresses(i)[2][0]['addr'];
+		mip = ni.ifaddresses(i)[2][0]['addr'];
 		sniff(filter = 'udp port 53', iface = i, prn = dns_detect);
+	# 
 	else:
-		my_ip = ni.ifaddresses(conf.iface)[2][0]['addr'];
+		mip = ni.ifaddresses(conf.iface)[2][0]['addr'];
 		sniff(filter = '', store = 0, prn = dns_detect);
+main()
