@@ -16,6 +16,10 @@ def get_args():
 	parser.add_argument('-h', metavar='192.168.10.1');
 	parser.add_argument('expression', nargs='*', action='store');
 	arg = parser.parse_args();
+	exp = 'udp port 53'
+	if (arg.expression):
+		exp = exp + ' and ' + ' '.join(arg.expression)
+		print exp
 	if (arg.h):
 		print arg.h
 		with open(arg.h) as fp:
