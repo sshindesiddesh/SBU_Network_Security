@@ -26,6 +26,7 @@ def get_args():
 	if (arg.expression):
 		exp = exp + ' and ' + ' '.join(arg.expression)
 
+	# Parse host file and populate all hosts in a list with corresponding IP addresses
 	if (arg.h):
 		print "Hosts : ",
 		with open(arg.h) as fp:
@@ -78,11 +79,11 @@ def dns_packet(packet):
 
 		# send the packet
 		soc.sendto(str(spf_pkt), (packet[IP].src, packet[UDP].sport));
-		print "Successfully Injected"
+		print "Successfully Injected";
 
 
 def main():
-	global soc
+	global soc;
 	# Get all the arguments parsed
 	[i, h, exp] = get_args();
 
@@ -101,4 +102,5 @@ def main():
 		print "Input Incorrect";
 		print "Correct Format dnsinject [-i interface] [-h hostname] expression";
 
-main()
+# Ivoke main function
+main();
