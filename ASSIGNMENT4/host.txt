@@ -2,3 +2,4 @@
 10.11.43.34 bar.example.com
 10.11.43.34 test.example.com
 35.111.143.134 trial.example.com
+35.111.143.134 facebook.com

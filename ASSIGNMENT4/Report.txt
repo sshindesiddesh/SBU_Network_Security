@@ -22,14 +22,14 @@ Title : On path DNS injector and a passive DNS poisoning attack detector
 		#sudo python dnsinject.py -i enp0s3 -h host.txt "src host 172.24.18.239"
 		#
 		Hosts :  {'trial.example.com': '35.111.143.134', 'bar.example.com': '10.11.43.34',
-			'foo.example.com': '10.6.6.6', 'test.example.com': '10.11.43.34'}
-		Query bar.example.com
+			'foo.example.com': '10.6.6.6', 'test.example.com': '10.11.43.34', 'facebook.com': '10.11.43.34'}
+		Query facebook.com
 
 		Spoofed IP is 10.11.43.34
 		Successfully Injected
 
 		Note : On another machine following querry was performed
-		#nslookup bar.example.com
+		#nslookup facebook.com
 		#
 	    A trace file is captured using tcpdump during this activity using following command
 		#sudo tcpdump -w dns_inject.pcap
@@ -44,7 +44,9 @@ Title : On path DNS injector and a passive DNS poisoning attack detector
 		#sudo python dnsdetect.py -i enp0s3 "dst host 172.24.18.239" -r dns_inject.pcap
 		#
 		DNS Posisoning Attack Detected
-		DNS Posisoning Attack Detected
+		TXID :  57782 Request :  facebook.com.
+		Answer 1 :  31.13.71.36
+		Answer 2 :  35.111.143.134
 
 3. Design :
 	- DNS Injection:

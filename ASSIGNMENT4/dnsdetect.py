@@ -49,6 +49,12 @@ def dns_detect(packet):
 					pkt[DNS].id == packet[DNS].id and
 					pkt[DNS].qd.qname == packet[DNS].qd.qname):
 					print "DNS Posisoning Attack Detected"
+					# print TXID and IP list
+					print "TXID : ", pkt[1][DNS].id,
+					print "Request : ", pkt[1][DNS][DNSRR].rrname
+					print "Answer 1 : ", str(packet[DNSRR].rdata)
+					print "Answer 2 : ", str(pkt[DNSRR].rdata)
+					
 		# Append the the packet tot he queue
 		packet_q.append(packet)
 
